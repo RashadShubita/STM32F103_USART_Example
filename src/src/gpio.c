@@ -44,34 +44,6 @@ void GPIO_Init_PB(void)
 }
 
 /**
- * @brief   USART1 GPIO initialization function
- * @note    PA9 -> USART1_TX, PA10 -> USART1_RX
- * @param   None
- * @retval  None
- */
-void GPIO_USART1_Init(void)
-{
- /* GPIOA clock enable */
-  	RCC ->APB2ENR   |= RCC_APB2ENR_IOPAEN;
-
- /* PA9 TX: Output mode, max speed 2 MHz. */
-	GPIOA ->CRH     &= ~GPIO_CRH_MODE9;
-	GPIOA ->CRH     |=  GPIO_CRH_MODE9_1;
-
- /* PA9 TX: Alternate function output Push-pull */
-  	GPIOA ->CRH     &= ~GPIO_CRH_CNF9;
-    GPIOA ->CRH     |=  GPIO_CRH_CNF9_1;
-
- /* PA10 RX: Floating input */
-  	GPIOA ->CRH     &= ~GPIO_CRH_CNF10;
-    GPIOA ->CRH     |=  GPIO_CRH_CNF10_0;
-
- /* PA10 RX: Input mode */
-  	GPIOA ->CRH     &= ~GPIO_CRH_MODE10;
-
-}
-
-/**
  * @brief   USART2 GPIO initialization function
  * @note    PB10 -> USART1_TX, PB11 -> USART1_RX
  * @param   None

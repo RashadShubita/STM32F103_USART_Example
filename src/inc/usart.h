@@ -12,22 +12,33 @@
 #include "gpio.h"
 #include <math.h>
 
-#define Baud_Rate       115200
-#define With_DMA        1
-#define Without_DMA     0
 #define Yes             1
 #define No              0
 
 /**
- * @brief   USART initialization function
- * @note    F_CK Input clock to the peripheral(PCLK1[APB1] for USART2, 3, 4, 5 or PCLK2[APB2] for USART1) & always  over-sampling by 16
- * @param   USARTx:       where x=1 ..3
- *          Is_With_DMA:  With_DMA
- *                        Without_DMA
- *          F_CK:         Input clock to the peripheral in Hz
+ * @brief   USART1 GPIO initialization function
+ * @note    PA9 -> USART1_TX, PA10 -> USART1_RX
+ * @param   None
  * @retval  None
  */
-void USART_Init(USART_TypeDef *USARTx, uint8_t Is_With_DMA, uint32_t F_CK );
+void USART1_GPIO_Init(void);
+
+/**
+ * @brief   USART BRR value calculation
+ * @note    F_CK Input clock to the peripheral(PCLK1[APB1] for USART2, 3, 4, 5 or PCLK2[APB2] for USART1) & always  over-sampling by 16
+ * @param   Baud_Rate:    Desired Baud Rate value
+ *          F_CK:         Input clock to the peripheral in Hz
+ * @retval  Value of BRR
+ */
+uint16_t Cal_USART_BRR_Val(uint32_t Baud_Rate, uint32_t F_CK);
+
+/**
+ * @brief   USART initialization function
+ * @note    None
+ * @param   BRR_Val:     Can be calculated using Cal_USART_BRR_Val function
+ * @retval  None
+ */
+void USART1_Init(uint16_t BRR_Val);
 
 /**
  * @brief   Enable USART transmitter and receiver
@@ -38,20 +49,12 @@ void USART_Init(USART_TypeDef *USARTx, uint8_t Is_With_DMA, uint32_t F_CK );
 void USART_Enable(USART_TypeDef *USARTx);
 
 /**
- * @brief   Char transmit
- * @note
- * @param   USARTX, char
- * @retval  None
- */
-void USART_Send_Char(USART_TypeDef *USARTx, uint16_t Value);
-
-/**
  * @brief   String transmit
  * @note
- * @param   USARTX, str
+ * @param   str, size
  * @retval  None
  */
-void USART_Send_String(USART_TypeDef *USARTx,const char *str);
+void strTransmit(const char * str, uint8_t size);
 
 /**
  * @brief   IRQ callback function

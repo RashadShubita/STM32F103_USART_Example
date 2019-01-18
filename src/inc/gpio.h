@@ -85,14 +85,6 @@ void GPIO_OnBoard_Init_LED();
 void GPIO_Init_PB(void);
 
 /**
- * @brief   USART1 GPIO initialization function
- * @note    PA9 -> USART1_TX, PA10 -> USART1_RX
- * @param   None
- * @retval  None
- */
-void GPIO_USART1_Init(void);
-
-/**
  * @brief   USART2 GPIO initialization function
  * @note    PB10 -> USART1_TX, PB11 -> USART1_RX
  * @param   None

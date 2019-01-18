@@ -228,116 +228,127 @@ static void strReceive(void)
   }
 }
 
-
 /**
  * @brief   String transmit
  * @note
- * @param   USARTX, str
+ * @param   str, size
  * @retval  None
  */
-void USART_Send_String(USART_TypeDef *USARTx,const char *str)
+void strTransmit(const char * str, uint8_t size)
 {
- /* Check null pointers */
- if(NULL != str)
+  /* Check null pointers */
+  if(NULL != str)
   {
-   while(*str != 0)
-	{
-	  USART_Send_Char(USARTx, *str++);
-	}
-   USART_Send_Char(USARTx, *str);
+    /* Send all string characters */
+    for(int idx = 0; idx < size; idx++)
+    {
+      /* Check USART status register */
+      while(!(USART1->SR & USART_SR_TXE))
+      {
+        /* Wait for transmission buffer empty flag */
+      }
+
+      /* Write data into transmit data register */
+      USART1->DR = str[idx];
+    }
   }
- else
- {
-   /* Null pointers, do nothing */
- }
+  else
+  {
+    /* Null pointers, do nothing */
+  }
 }
 
 /**
- * @brief   Char transmit
- * @note
- * @param   USARTX, char
+ * @brief   USART1 GPIO initialization function
+ * @note    PA9 -> USART1_TX, PA10 -> USART1_RX
+ * @param   None
  * @retval  None
  */
-void USART_Send_Char(USART_TypeDef *USARTx, uint16_t Value)
+void USART1_GPIO_Init(void)
 {
-    /* Check USART status register */
-    while(!(USARTx->SR & USART_SR_TXE))
-    {
-      /* Wait for transmission buffer empty flag */
-    }
-	USARTx ->DR = Value;
+ /* GPIOA clock enable */
+  	RCC ->APB2ENR   |= RCC_APB2ENR_IOPAEN;
+
+ /* PA9 TX: Output mode, max speed 2 MHz. */
+	GPIOA ->CRH     &= ~GPIO_CRH_MODE9;
+	GPIOA ->CRH     |=  GPIO_CRH_MODE9_1;
+
+ /* PA9 TX: Alternate function output Push-pull */
+  	GPIOA ->CRH     &= ~GPIO_CRH_CNF9;
+    GPIOA ->CRH     |=  GPIO_CRH_CNF9_1;
+
+ /* PA10 RX: Floating input */
+  	GPIOA ->CRH     &= ~GPIO_CRH_CNF10;
+    GPIOA ->CRH     |=  GPIO_CRH_CNF10_0;
+
+ /* PA10 RX: Input mode */
+  	GPIOA ->CRH     &= ~GPIO_CRH_MODE10;
+
+}
+
+/**
+ * @brief   USART BRR value calculation
+ * @note    F_CK Input clock to the peripheral(PCLK1[APB1] for USART2, 3, 4, 5 or PCLK2[APB2] for USART1) & always  over-sampling by 16
+ * @param   Baud_Rate:    Desired Baud Rate value
+ *          F_CK:         Input clock to the peripheral in Hz
+ * @retval  Value of BRR
+ */
+uint16_t Cal_USART_BRR_Val(uint32_t Baud_Rate, uint32_t F_CK)
+{
+	 double USARTDIV=0;
+	 uint8_t Fraction;
+
+	   /* Set baud rate = 115200 Bps
+	    * USARTDIV = Fck / (16 * baud_rate)
+	    *          = 72000000 / (16 * 115200) = 39.0625
+	    *
+	    * DIV_Fraction = 16 * 0.0625 = 1 = 0x1
+	    * DIV_Mantissa = 39 = 0x27
+	    *
+	    * BRR          = 0x271 */
+
+	  USARTDIV    = ( F_CK/(Baud_Rate*16.0) );
+	  Fraction = round( (USARTDIV - ((uint16_t)USARTDIV) )* 16 ) ;
+	  if(Fraction > 15)
+		 {
+		    Fraction=0;
+		    USARTDIV++;
+		 }
+	  return ( ( ((uint16_t)USARTDIV) << 4 ) + Fraction) ;
 }
 
 /**
  * @brief   USART initialization function
- * @note    F_CK Input clock to the peripheral(PCLK1[APB1] for USART2, 3, 4, 5 or PCLK2[APB2] for USART1) & always  over-sampling by 16
- * @param   USARTx:       where x=1 ..3
- *          Is_With_DMA:  With_DMA
- *                        Without_DMA
- *          F_CK:         Input clock to the peripheral in Hz
+ * @note    None
+ * @param   BRR_Val:     Can be calculated using Cal_USART_BRR_Val function
  * @retval  None
  */
-void USART_Init(USART_TypeDef *USARTx, uint8_t Is_With_DMA, uint32_t F_CK )
+void USART1_Init(uint16_t BRR_Val)
 {
 
- double USARTDIV=0;
- uint8_t Fraction;
-
 /* USART GPIO configuration -------------------------------------------------------*/
- if(USARTx == USART1)
- {
+
   /* Configuration GPIOA TX & RX based on Reference manual Table 24 & Table 54	*/
-	 GPIO_USART1_Init();
-
- }
-
- else if(USARTx == USART3)
- {
-  /* Configuration GPIOB TX & RX based on Reference manual Table 24 & Table 52	*/
-	 GPIO_USART2_Init();
- }
-
+	USART1_GPIO_Init();
 
 /* USART configuration -------------------------------------------------------*/
    /*Enable USART1 clock */
-   if(USARTx == USART1)
-     RCC ->APB2ENR   |=  RCC_APB2ENR_USART1EN;
-   /* Enable USART3 clock */
-   else if(USARTx == USART3)
-    RCC ->APB1ENR   |=  RCC_APB1ENR_USART3EN;
+   RCC ->APB2ENR   |=  RCC_APB2ENR_USART1EN;
 
    /* select 1 Start bit, 9 Data bits, n Stop bit  */
-   USARTx ->CR1    |= USART_CR1_M;
+   USART1 ->CR1    |= USART_CR1_M;
 
    /* STOP bits, 00: 1 Stop bit */
-   USARTx->CR2    &= ~USART_CR2_STOP;
+   USART1->CR2    &= ~USART_CR2_STOP;
 
    /* Select odd parity */
-   USARTx->CR1 |= USART_CR1_PS;
+   USART1->CR1 |= USART_CR1_PS;
 
    /* Enable parity control */
    USART1->CR1 |= USART_CR1_PCE;
 
-   /* Set baud rate = 115200 Bps
-    * USARTDIV = Fck / (16 * baud_rate)
-    *          = 72000000 / (16 * 115200) = 39.0625
-    *
-    * DIV_Fraction = 16 * 0.0625 = 1 = 0x1
-    * DIV_Mantissa = 39 = 0x27
-    *
-    * BRR          = 0x271 */
-  USARTDIV    = ( F_CK/(Baud_Rate*16.0) );
-  Fraction = round( (USARTDIV - ((uint16_t)USARTDIV) )* 16 ) ;
-  if(Fraction > 15)
-	 {
-	    Fraction=0;
-	    USARTDIV++;
-	 }
-  USARTx ->BRR = ( ( ((uint16_t)USARTDIV) << 4 ) + Fraction) ;
-
-	if(Is_With_DMA == Yes)
-  		/* DMA mode enabled for reception */
-  		USARTx->CR3  |= USART_CR3_DMAR;
+   /* Set Baud Rate */
+   USART1->BRR = BRR_Val;
 
 	__ASM("NOP");
 	__ASM("NOP");
@@ -385,7 +396,7 @@ void USART1_Process(void)
   {
     case USART1_PARITY_ERROR:
       /* Transmit parity error */
-    	USART_Send_String(USART1, parity_error);
+    	strTransmit(parity_error, sizeof(parity_error));
 
       /* Reset USART1 state */
       currentState = USART1_IDLE;
@@ -414,7 +425,7 @@ void USART1_Process(void)
   {
     case USART1_IDLE:
       /* Transmit data */
-    	USART_Send_String(USART1, hello_world);
+      strTransmit(hello_world, sizeof(hello_world));
 
       /* Go to next state */
       currentState = USART1_WAIT_FOR_RESPONCE;
@@ -438,7 +449,7 @@ void USART1_Process(void)
 
     case USART1_ASK_FOR_NAME:
       /* Transmit data */
-    	USART_Send_String(USART1, ask_for_name);
+      strTransmit(ask_for_name, sizeof(ask_for_name));
 
       /* Go to next state */
       currentState = USART1_WAIT_FOR_NAME;
@@ -449,10 +460,10 @@ void USART1_Process(void)
       if(0 != RxMessageLength)
       {
         /* Transmit data */
-    	  USART_Send_String(USART1, hi);
-    	  USART_Send_String(USART1, RxBuffer);
-    	  USART_Send_String(USART1, ask_for_command);
-    	  USART_Send_String(USART1, ask_for_command_ex);
+          strTransmit(hi, sizeof(hi));
+          strTransmit(RxBuffer, RxMessageLength);
+          strTransmit(ask_for_command, sizeof(ask_for_command));
+          strTransmit(ask_for_command_ex, sizeof(ask_for_command_ex));
 
         /* Reset message length */
         RxMessageLength = 0;
@@ -490,7 +501,7 @@ void USART1_Process(void)
           //GPIO_TurnON_LED(EVAL_GREEN_LED);
 
           /* Transmit data */
-          USART_Send_String(USART1, done);
+          strTransmit(done, sizeof(done));
         }
         else
         {
@@ -506,7 +517,7 @@ void USART1_Process(void)
           //GPIO_TurnON_LED(EVAL_RED_LED);
 
           /* Transmit data */
-          USART_Send_String(USART1, done);
+          strTransmit(done, sizeof(done));
         }
         else if(STR_NOT_EQUAL == isMatch_01)
         {
@@ -526,7 +537,7 @@ void USART1_Process(void)
           //GPIO_TurnOFF_LED(EVAL_GREEN_LED);
 
           /* Transmit data */
-          USART_Send_String(USART1, done);
+          strTransmit(done, sizeof(done));
         }
         else if((STR_NOT_EQUAL == isMatch_02)
             && (STR_NOT_EQUAL == isMatch_01))
@@ -547,14 +558,14 @@ void USART1_Process(void)
          // GPIO_TurnOFF_LED(EVAL_RED_LED);
 
           /* Transmit data */
-        	USART_Send_String(USART1, done);
+          strTransmit(done, sizeof(done));
         }
         else if((STR_NOT_EQUAL == isMatch_03)
             && (STR_NOT_EQUAL == isMatch_02)
             && (STR_NOT_EQUAL == isMatch_01))
         {
           /* Transmit data */
-        	USART_Send_String(USART1, wrong_command);
+          strTransmit(wrong_command, sizeof(wrong_command));
         }
         else
         {

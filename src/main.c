@@ -53,7 +53,7 @@ int main(void)
 	SysTick_Init();
     GPIO_OnBoard_Init_LED();
     NVIC_Init();
-    USART_Init(USART1, Without_DMA, 8000000);
+    USART1_Init(Cal_USART_BRR_Val(115200,8000000) );
 
     __enable_irq();
     USART_Enable(USART1);

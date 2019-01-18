@@ -1,8 +1,9 @@
 usart.c:98:25:strCmp	32	static
 usart.c:134:6:USART1_IRQ_Callback	4	static
 usart.c:176:13:strReceive	16	static
-usart.c:238:6:USART_Send_String	16	static
-usart.c:261:6:USART_Send_Char	16	static
-usart.c:280:6:USART_Init	48	static
-usart.c:355:6:USART_Enable	16	static
-usart.c:381:6:USART1_Process	16	static
+usart.c:237:6:strTransmit	24	static
+usart.c:267:6:USART1_GPIO_Init	4	static
+usart.c:296:10:Cal_USART_BRR_Val	40	static
+usart.c:326:6:USART1_Init	16	static
+usart.c:366:6:USART_Enable	16	static
+usart.c:392:6:USART1_Process	16	static
