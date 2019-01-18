@@ -1,0 +1,4 @@
+gpio.c:17:6:GPIO_OnBoard_Init_LED	4	static
+gpio.c:37:6:GPIO_Init_PB	4	static
+gpio.c:52:6:GPIO_USART1_Init	4	static
+gpio.c:80:6:GPIO_USART2_Init	4	static
